@@ -9,6 +9,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/storagesync/mgmt/2020-03-01/storagesync"
 	"github.com/Azure/go-autorest/autorest"
 	az "github.com/Azure/go-autorest/autorest/azure"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/common"
 	"github.com/tombuildsstuff/giovanni/storage/2018-11-09/blob/accounts"
 	"github.com/tombuildsstuff/giovanni/storage/2018-11-09/blob/blobs"
@@ -83,6 +84,28 @@ func NewClient(options *common.ClientOptions) *Client {
 	return &client
 }
 
+func (client Client) AccountsDataPlaneClientWithObject(ctx context.Context, account *schema.ResourceData) (*accounts.Client, error) {
+	if client.storageAdAuth != nil {
+		accountsClient := accounts.NewWithEnvironment(client.environment)
+		accountsClient.Client.Authorizer = *client.storageAdAuth
+		return &accountsClient, nil
+	}
+
+	accountKey := account.Get("primary_access_key").(string)
+	if accountKey == "" {
+		return nil, fmt.Errorf("Error retrieving Account Key: %s", "Not available in schema")
+	}
+
+	storageAuth, err := autorest.NewSharedKeyAuthorizer(account.Get("name").(string), accountKey, autorest.SharedKey)
+	if err != nil {
+		return nil, fmt.Errorf("Error building Authorizer: %+v", err)
+	}
+
+	accountsClient := accounts.NewWithEnvironment(client.environment)
+	accountsClient.Client.Authorizer = storageAuth
+	return &accountsClient, nil
+}
+
 func (client Client) AccountsDataPlaneClient(ctx context.Context, account accountDetails) (*accounts.Client, error) {
 	if client.storageAdAuth != nil {
 		accountsClient := accounts.NewWithEnvironment(client.environment)
@@ -103,6 +126,28 @@ func (client Client) AccountsDataPlaneClient(ctx context.Context, account accoun
 	accountsClient := accounts.NewWithEnvironment(client.environment)
 	accountsClient.Client.Authorizer = storageAuth
 	return &accountsClient, nil
+}
+
+func (client Client) BlobsClientWithObject(ctx context.Context, account *schema.ResourceData) (*blobs.Client, error) {
+	if client.storageAdAuth != nil {
+		blobsClient := blobs.NewWithEnvironment(client.environment)
+		blobsClient.Client.Authorizer = *client.storageAdAuth
+		return &blobsClient, nil
+	}
+
+	accountKey := account.Get("primary_access_key").(string)
+	if accountKey == "" {
+		return nil, fmt.Errorf("Error retrieving Account Key: %s", "Not available in schema")
+	}
+
+	storageAuth, err := autorest.NewSharedKeyAuthorizer(account.Get("name").(string), accountKey, autorest.SharedKey)
+	if err != nil {
+		return nil, fmt.Errorf("Error building Authorizer: %+v", err)
+	}
+
+	blobsClient := blobs.NewWithEnvironment(client.environment)
+	blobsClient.Client.Authorizer = storageAuth
+	return &blobsClient, nil
 }
 
 func (client Client) BlobsClient(ctx context.Context, account accountDetails) (*blobs.Client, error) {
@@ -127,6 +172,28 @@ func (client Client) BlobsClient(ctx context.Context, account accountDetails) (*
 	return &blobsClient, nil
 }
 
+func (client Client) ContainersClientWithObject(ctx context.Context, account *schema.ResourceData) (*containers.Client, error) {
+	if client.storageAdAuth != nil {
+		containersClient := containers.NewWithEnvironment(client.environment)
+		containersClient.Client.Authorizer = *client.storageAdAuth
+		return &containersClient, nil
+	}
+
+	accountKey := account.Get("primary_access_key").(string)
+	if accountKey == "" {
+		return nil, fmt.Errorf("Error retrieving Account Key: %s", "Not available in schema")
+	}
+
+	storageAuth, err := autorest.NewSharedKeyAuthorizer(account.Get("name").(string), accountKey, autorest.SharedKey)
+	if err != nil {
+		return nil, fmt.Errorf("Error building Authorizer: %+v", err)
+	}
+
+	containersClient := containers.NewWithEnvironment(client.environment)
+	containersClient.Client.Authorizer = storageAuth
+	return &containersClient, nil
+}
+
 func (client Client) ContainersClient(ctx context.Context, account accountDetails) (*containers.Client, error) {
 	if client.storageAdAuth != nil {
 		containersClient := containers.NewWithEnvironment(client.environment)
@@ -149,6 +216,24 @@ func (client Client) ContainersClient(ctx context.Context, account accountDetail
 	return &containersClient, nil
 }
 
+func (client Client) FileShareDirectoriesClientWithObject(ctx context.Context, account *schema.ResourceData) (*directories.Client, error) {
+	// NOTE: Files do not support AzureAD Authentication
+
+	accountKey := account.Get("primary_access_key").(string)
+	if accountKey == "" {
+		return nil, fmt.Errorf("Error retrieving Account Key: %s", "Not available in schema")
+	}
+
+	storageAuth, err := autorest.NewSharedKeyAuthorizer(account.Get("name").(string), accountKey, autorest.SharedKey)
+	if err != nil {
+		return nil, fmt.Errorf("Error building Authorizer: %+v", err)
+	}
+
+	directoriesClient := directories.NewWithEnvironment(client.environment)
+	directoriesClient.Client.Authorizer = storageAuth
+	return &directoriesClient, nil
+}
+
 func (client Client) FileShareDirectoriesClient(ctx context.Context, account accountDetails) (*directories.Client, error) {
 	// NOTE: Files do not support AzureAD Authentication
 
@@ -167,6 +252,24 @@ func (client Client) FileShareDirectoriesClient(ctx context.Context, account acc
 	return &directoriesClient, nil
 }
 
+func (client Client) FileSharesClientWithObject(ctx context.Context, account *schema.ResourceData) (*shares.Client, error) {
+	// NOTE: Files do not support AzureAD Authentication
+
+	accountKey := account.Get("primary_access_key").(string)
+	if accountKey == "" {
+		return nil, fmt.Errorf("Error retrieving Account Key: %s", "Not available in schema")
+	}
+
+	storageAuth, err := autorest.NewSharedKeyAuthorizer(account.Get("name").(string), accountKey, autorest.SharedKey)
+	if err != nil {
+		return nil, fmt.Errorf("Error building Authorizer: %+v", err)
+	}
+
+	sharesClient := shares.NewWithEnvironment(client.environment)
+	sharesClient.Client.Authorizer = storageAuth
+	return &sharesClient, nil
+}
+
 func (client Client) FileSharesClient(ctx context.Context, account accountDetails) (*shares.Client, error) {
 	// NOTE: Files do not support AzureAD Authentication
 
@@ -183,6 +286,28 @@ func (client Client) FileSharesClient(ctx context.Context, account accountDetail
 	sharesClient := shares.NewWithEnvironment(client.environment)
 	sharesClient.Client.Authorizer = storageAuth
 	return &sharesClient, nil
+}
+
+func (client Client) QueuesClientWithObject(ctx context.Context, account *schema.ResourceData) (*queues.Client, error) {
+	if client.storageAdAuth != nil {
+		queueAuth := queues.NewWithEnvironment(client.environment)
+		queueAuth.Client.Authorizer = *client.storageAdAuth
+		return &queueAuth, nil
+	}
+
+	accountKey := account.Get("primary_access_key").(string)
+	if accountKey == "" {
+		return nil, fmt.Errorf("Error retrieving Account Key: %s", "Not available in schema")
+	}
+
+	storageAuth, err := autorest.NewSharedKeyAuthorizer(account.Get("name").(string), accountKey, autorest.SharedKey)
+	if err != nil {
+		return nil, fmt.Errorf("Error building Authorizer: %+v", err)
+	}
+
+	queuesClient := queues.NewWithEnvironment(client.environment)
+	queuesClient.Client.Authorizer = storageAuth
+	return &queuesClient, nil
 }
 
 func (client Client) QueuesClient(ctx context.Context, account accountDetails) (*queues.Client, error) {
@@ -207,6 +332,24 @@ func (client Client) QueuesClient(ctx context.Context, account accountDetails) (
 	return &queuesClient, nil
 }
 
+func (client Client) TableEntityClientWithObject(ctx context.Context, account *schema.ResourceData) (*entities.Client, error) {
+	// NOTE: Table Entity does not support AzureAD Authentication
+
+	accountKey := account.Get("primary_access_key").(string)
+	if accountKey == "" {
+		return nil, fmt.Errorf("Error retrieving Account Key: %s", "Not available in schema")
+	}
+
+	storageAuth, err := autorest.NewSharedKeyAuthorizer(account.Get("name").(string), accountKey, autorest.SharedKey)
+	if err != nil {
+		return nil, fmt.Errorf("Error building Authorizer: %+v", err)
+	}
+
+	entitiesClient := entities.NewWithEnvironment(client.environment)
+	entitiesClient.Client.Authorizer = storageAuth
+	return &entitiesClient, nil
+}
+
 func (client Client) TableEntityClient(ctx context.Context, account accountDetails) (*entities.Client, error) {
 	// NOTE: Table Entity does not support AzureAD Authentication
 
@@ -223,6 +366,24 @@ func (client Client) TableEntityClient(ctx context.Context, account accountDetai
 	entitiesClient := entities.NewWithEnvironment(client.environment)
 	entitiesClient.Client.Authorizer = storageAuth
 	return &entitiesClient, nil
+}
+
+func (client Client) TablesClientWithObject(ctx context.Context, account *schema.ResourceData) (*tables.Client, error) {
+	// NOTE: Tables do not support AzureAD Authentication
+
+	accountKey := account.Get("primary_access_key").(string)
+	if accountKey == "" {
+		return nil, fmt.Errorf("Error retrieving Account Key: %s", "Not available in schema")
+	}
+
+	storageAuth, err := autorest.NewSharedKeyAuthorizer(account.Get("name").(string), accountKey, autorest.SharedKey)
+	if err != nil {
+		return nil, fmt.Errorf("Error building Authorizer: %+v", err)
+	}
+
+	tablesClient := tables.NewWithEnvironment(client.environment)
+	tablesClient.Client.Authorizer = storageAuth
+	return &tablesClient, nil
 }
 
 func (client Client) TablesClient(ctx context.Context, account accountDetails) (*tables.Client, error) {
