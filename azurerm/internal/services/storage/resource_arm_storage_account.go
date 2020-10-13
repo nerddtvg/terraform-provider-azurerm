@@ -760,15 +760,8 @@ func resourceArmStorageAccountCreate(d *schema.ResourceData, meta interface{}) e
 
 	if val, ok := d.GetOk("queue_properties"); ok {
 		storageClient := meta.(*clients.Client).Storage
-		account, err := storageClient.FindAccount(ctx, storageAccountName)
-		if err != nil {
-			return fmt.Errorf("Error retrieving Account %q: %s", storageAccountName, err)
-		}
-		if account == nil {
-			return fmt.Errorf("Unable to locate Storage Account %q!", storageAccountName)
-		}
 
-		queueClient, err := storageClient.QueuesClient(ctx, *account)
+		queueClient, err := storageClient.QueuesClientWithObject(ctx, d)
 		if err != nil {
 			return fmt.Errorf("Error building Queues Client: %s", err)
 		}
@@ -790,15 +783,7 @@ func resourceArmStorageAccountCreate(d *schema.ResourceData, meta interface{}) e
 		}
 		storageClient := meta.(*clients.Client).Storage
 
-		account, err := storageClient.FindAccount(ctx, storageAccountName)
-		if err != nil {
-			return fmt.Errorf("Error retrieving Account %q: %s", storageAccountName, err)
-		}
-		if account == nil {
-			return fmt.Errorf("Unable to locate Storage Account %q!", storageAccountName)
-		}
-
-		accountsClient, err := storageClient.AccountsDataPlaneClient(ctx, *account)
+		accountsClient, err := storageClient.AccountsDataPlaneClientWithObject(ctx, d)
 		if err != nil {
 			return fmt.Errorf("Error building Accounts Data Plane Client: %s", err)
 		}
@@ -1014,15 +999,8 @@ func resourceArmStorageAccountUpdate(d *schema.ResourceData, meta interface{}) e
 
 	if d.HasChange("queue_properties") {
 		storageClient := meta.(*clients.Client).Storage
-		account, err := storageClient.FindAccount(ctx, storageAccountName)
-		if err != nil {
-			return fmt.Errorf("Error retrieving Account %q: %s", storageAccountName, err)
-		}
-		if account == nil {
-			return fmt.Errorf("Unable to locate Storage Account %q!", storageAccountName)
-		}
 
-		queueClient, err := storageClient.QueuesClient(ctx, *account)
+		queueClient, err := storageClient.QueuesClientWithObject(ctx, d)
 		if err != nil {
 			return fmt.Errorf("Error building Queues Client: %s", err)
 		}
@@ -1044,15 +1022,7 @@ func resourceArmStorageAccountUpdate(d *schema.ResourceData, meta interface{}) e
 		}
 		storageClient := meta.(*clients.Client).Storage
 
-		account, err := storageClient.FindAccount(ctx, storageAccountName)
-		if err != nil {
-			return fmt.Errorf("Error retrieving Account %q: %s", storageAccountName, err)
-		}
-		if account == nil {
-			return fmt.Errorf("Unable to locate Storage Account %q!", storageAccountName)
-		}
-
-		accountsClient, err := storageClient.AccountsDataPlaneClient(ctx, *account)
+		accountsClient, err := storageClient.AccountsDataPlaneClientWithObject(ctx, d)
 		if err != nil {
 			return fmt.Errorf("Error building Accounts Data Plane Client: %s", err)
 		}
@@ -1215,13 +1185,6 @@ func resourceArmStorageAccountRead(d *schema.ResourceData, meta interface{}) err
 	}
 
 	storageClient := meta.(*clients.Client).Storage
-	account, err := storageClient.FindAccount(ctx, name)
-	if err != nil {
-		return fmt.Errorf("Error retrieving Account %q: %s", name, err)
-	}
-	if account == nil {
-		return fmt.Errorf("Unable to locate Storage Account %q!", name)
-	}
 
 	blobClient := storageClient.BlobServicesClient
 
@@ -1246,7 +1209,7 @@ func resourceArmStorageAccountRead(d *schema.ResourceData, meta interface{}) err
 
 	if resp.Sku.Tier == storage.Standard {
 		if resp.Kind == storage.Storage || resp.Kind == storage.StorageV2 {
-			queueClient, err := storageClient.QueuesClient(ctx, *account)
+			queueClient, err := storageClient.QueuesClientWithObject(ctx, d)
 			if err != nil {
 				return fmt.Errorf("Error building Queues Client: %s", err)
 			}
@@ -1268,14 +1231,7 @@ func resourceArmStorageAccountRead(d *schema.ResourceData, meta interface{}) err
 
 	// static website only supported on StorageV2 and BlockBlobStorage
 	if resp.Kind == storage.StorageV2 || resp.Kind == storage.BlockBlobStorage {
-		storageClient := meta.(*clients.Client).Storage
-
-		account, err := storageClient.FindAccount(ctx, name)
-		if err != nil {
-			return fmt.Errorf("Error retrieving Account %q: %s", name, err)
-		}
-
-		accountsClient, err := storageClient.AccountsDataPlaneClient(ctx, *account)
+		accountsClient, err := storageClient.AccountsDataPlaneClientWithObject(ctx, d)
 		if err != nil {
 			return fmt.Errorf("Error building Accounts Data Plane Client: %s", err)
 		}
