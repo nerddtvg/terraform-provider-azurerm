@@ -1240,7 +1240,7 @@ resource "azurerm_kubernetes_cluster" "test" {
     azure_keyvault_secrets_provider {
       enabled                 = %t
       secret_rotation_enabled = %t
-      rotation_interval       = %s
+      rotation_interval       = "%s"
     }
   }
 
