@@ -18,11 +18,36 @@ import (
 	"github.com/hashicorp/go-azure-sdk/resource-manager/notificationhubs/2023-09-01/hubs"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/notificationhub/migration"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/timeouts"
 )
+
+var _ sdk.ResourceWithUpdate = NotificationHubResource{}
+
+type NotificationHubResource struct{}
+
+type NotificationHubResourceModel struct{}
+
+func (r NotificationHubResource) Arguments() map[string]*pluginsdk.Schema {}
+
+func (r NotificationHubResource) Attributes() map[string]*pluginsdk.Schema {}
+
+func (r NotificationHubResource) IDValidationFunc() pluginsdk.SchemaValidateFunc {}
+
+func (r NotificationHubResource) ResourceType() string {}
+
+func (NotificationHubResource) ModelObject() interface{} {}
+
+func (r NotificationHubResource) Create() sdk.ResourceFunc {}
+
+func (r NotificationHubResource) Update() sdk.ResourceFunc {}
+
+func (r NotificationHubResource) Delete() sdk.ResourceFunc {}
+
+func (r NotificationHubResource) Read() sdk.ResourceFunc {}
 
 var notificationHubResourceName = "azurerm_notification_hub"
 

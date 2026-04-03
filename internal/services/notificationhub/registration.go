@@ -7,14 +7,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/action"
 	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 )
 
 type Registration struct{}
 
 var (
-	_ sdk.FrameworkServiceRegistration               = Registration{}
-	_ sdk.UntypedServiceRegistrationWithAGitHubLabel = Registration{}
+	_ sdk.FrameworkServiceRegistration             = Registration{}
+	_ sdk.TypedServiceRegistrationWithAGitHubLabel = Registration{}
 )
 
 func (r Registration) AssociatedGitHubLabel() string {
@@ -33,20 +32,20 @@ func (r Registration) WebsiteCategories() []string {
 	}
 }
 
-// SupportedDataSources returns the supported Data Sources supported by this Service
-func (r Registration) SupportedDataSources() map[string]*pluginsdk.Resource {
-	return map[string]*pluginsdk.Resource{
-		"azurerm_notification_hub_namespace": dataSourceNotificationHubNamespace(),
-		"azurerm_notification_hub":           dataSourceNotificationHub(),
+// DataSources returns the supported Data Sources supported by this Service
+func (r Registration) DataSources() []sdk.DataSource {
+	return []sdk.DataSource{
+		NotificationHubDataSource{},
+		NotificationHubNamespaceDataSource{},
 	}
 }
 
-// SupportedResources returns the supported Resources supported by this Service
-func (r Registration) SupportedResources() map[string]*pluginsdk.Resource {
-	return map[string]*pluginsdk.Resource{
-		"azurerm_notification_hub_authorization_rule": resourceNotificationHubAuthorizationRule(),
-		"azurerm_notification_hub_namespace":          resourceNotificationHubNamespace(),
-		"azurerm_notification_hub":                    resourceNotificationHub(),
+// Resources returns the supported Resources supported by this Service
+func (r Registration) Resources() []sdk.Resource {
+	return []sdk.Resource{
+		NotificationHubAuthorizationRuleResource{},
+		NotificationHubNamespaceResource{},
+		NotificationHubResource{},
 	}
 }
 

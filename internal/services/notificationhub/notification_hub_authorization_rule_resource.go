@@ -14,10 +14,35 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/locks"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/notificationhub/migration"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/timeouts"
 )
+
+var _ sdk.ResourceWithUpdate = NotificationHubAuthorizationRuleResource{}
+
+type NotificationHubAuthorizationRuleResource struct{}
+
+type NotificationHubAuthorizationRuleResourceModel struct{}
+
+func (r NotificationHubAuthorizationRuleResource) Arguments() map[string]*pluginsdk.Schema {}
+
+func (r NotificationHubAuthorizationRuleResource) Attributes() map[string]*pluginsdk.Schema {}
+
+func (r NotificationHubAuthorizationRuleResource) IDValidationFunc() pluginsdk.SchemaValidateFunc {}
+
+func (r NotificationHubAuthorizationRuleResource) ResourceType() string {}
+
+func (NotificationHubAuthorizationRuleResource) ModelObject() interface{} {}
+
+func (r NotificationHubAuthorizationRuleResource) Create() sdk.ResourceFunc {}
+
+func (r NotificationHubAuthorizationRuleResource) Update() sdk.ResourceFunc {}
+
+func (r NotificationHubAuthorizationRuleResource) Delete() sdk.ResourceFunc {}
+
+func (r NotificationHubAuthorizationRuleResource) Read() sdk.ResourceFunc {}
 
 func resourceNotificationHubAuthorizationRule() *pluginsdk.Resource {
 	return &pluginsdk.Resource{
@@ -228,44 +253,4 @@ func resourceNotificationHubAuthorizationRuleDelete(d *pluginsdk.ResourceData, m
 	}
 
 	return nil
-}
-
-func expandNotificationHubAuthorizationRuleRights(manage bool, send bool, listen bool) []hubs.AccessRights {
-	rights := make([]hubs.AccessRights, 0)
-
-	if manage {
-		rights = append(rights, hubs.AccessRightsManage)
-	}
-
-	if send {
-		rights = append(rights, hubs.AccessRightsSend)
-	}
-
-	if listen {
-		rights = append(rights, hubs.AccessRightsListen)
-	}
-
-	return rights
-}
-
-func flattenNotificationHubAuthorizationRuleRights(input *[]hubs.AccessRights) (manage bool, send bool, listen bool) {
-	if input == nil {
-		return
-	}
-
-	for _, right := range *input {
-		switch right {
-		case hubs.AccessRightsManage:
-			manage = true
-			continue
-		case hubs.AccessRightsSend:
-			send = true
-			continue
-		case hubs.AccessRightsListen:
-			listen = true
-			continue
-		}
-	}
-
-	return manage, send, listen
 }

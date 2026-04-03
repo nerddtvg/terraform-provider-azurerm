@@ -18,11 +18,36 @@ import (
 	"github.com/hashicorp/go-azure-sdk/resource-manager/notificationhubs/2023-09-01/namespaces"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/notificationhub/migration"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/timeouts"
 )
+
+var _ sdk.ResourceWithUpdate = NotificationHubNamespaceResource{}
+
+type NotificationHubNamespaceResource struct{}
+
+type NotificationHubNamespaceResourceModel struct{}
+
+func (r NotificationHubNamespaceResource) Arguments() map[string]*pluginsdk.Schema {}
+
+func (r NotificationHubNamespaceResource) Attributes() map[string]*pluginsdk.Schema {}
+
+func (r NotificationHubNamespaceResource) IDValidationFunc() pluginsdk.SchemaValidateFunc {}
+
+func (r NotificationHubNamespaceResource) ResourceType() string {}
+
+func (NotificationHubNamespaceResource) ModelObject() interface{} {}
+
+func (r NotificationHubNamespaceResource) Create() sdk.ResourceFunc {}
+
+func (r NotificationHubNamespaceResource) Update() sdk.ResourceFunc {}
+
+func (r NotificationHubNamespaceResource) Delete() sdk.ResourceFunc {}
+
+func (r NotificationHubNamespaceResource) Read() sdk.ResourceFunc {}
 
 var notificationHubNamespaceResourceName = "azurerm_notification_hub_namespace"
 

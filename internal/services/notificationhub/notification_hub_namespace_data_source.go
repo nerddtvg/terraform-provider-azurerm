@@ -14,9 +14,28 @@ import (
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/tags"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/notificationhubs/2023-09-01/namespaces"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/timeouts"
 )
+
+var _ sdk.DataSource = NotificationHubNamespaceDataSource{}
+
+type NotificationHubNamespaceDataSource struct{}
+
+type NotificationHubNamespaceDataSourceModel struct{}
+
+func (r NotificationHubNamespaceDataSource) Arguments() map[string]*pluginsdk.Schema {}
+
+func (r NotificationHubNamespaceDataSource) Attributes() map[string]*pluginsdk.Schema {}
+
+func (r NotificationHubNamespaceDataSource) IDValidationFunc() pluginsdk.SchemaValidateFunc {}
+
+func (r NotificationHubNamespaceDataSource) ResourceType() string {}
+
+func (NotificationHubNamespaceDataSource) ModelObject() interface{} {}
+
+func (r NotificationHubNamespaceDataSource) Read() sdk.ResourceFunc {}
 
 func dataSourceNotificationHubNamespace() *pluginsdk.Resource {
 	return &pluginsdk.Resource{
@@ -91,7 +110,7 @@ func resourceArmDataSourceNotificationHubNamespaceRead(d *pluginsdk.ResourceData
 
 	if model := resp.Model; model != nil {
 		d.Set("location", location.NormalizeNilable(&model.Location))
-		sku := flattenNotificationHubDataSourceNamespacesSku(&model.Sku)
+		sku := flattenNotificationHubNamespaceDataSourceNamespacesSku(&model.Sku)
 		if err := d.Set("sku", sku); err != nil {
 			return fmt.Errorf("setting `sku`: %+v", err)
 		}
@@ -108,7 +127,7 @@ func resourceArmDataSourceNotificationHubNamespaceRead(d *pluginsdk.ResourceData
 	return nil
 }
 
-func flattenNotificationHubDataSourceNamespacesSku(input *namespaces.Sku) []interface{} {
+func flattenNotificationHubNamespaceDataSourceNamespacesSku(input *namespaces.Sku) []interface{} {
 	outputs := make([]interface{}, 0)
 	if input == nil {
 		return outputs

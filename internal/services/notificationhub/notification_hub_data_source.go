@@ -13,9 +13,28 @@ import (
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/tags"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/notificationhubs/2023-09-01/hubs"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/timeouts"
 )
+
+var _ sdk.DataSource = NotificationHubDataSource{}
+
+type NotificationHubDataSource struct{}
+
+type NotificationHubDataSourceModel struct{}
+
+func (r NotificationHubDataSource) Arguments() map[string]*pluginsdk.Schema {}
+
+func (r NotificationHubDataSource) Attributes() map[string]*pluginsdk.Schema {}
+
+func (r NotificationHubDataSource) IDValidationFunc() pluginsdk.SchemaValidateFunc {}
+
+func (r NotificationHubDataSource) ResourceType() string {}
+
+func (NotificationHubDataSource) ModelObject() interface{} {}
+
+func (r NotificationHubDataSource) Read() sdk.ResourceFunc {}
 
 func dataSourceNotificationHub() *pluginsdk.Resource {
 	return &pluginsdk.Resource{
