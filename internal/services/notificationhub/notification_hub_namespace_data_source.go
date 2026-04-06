@@ -4,6 +4,7 @@
 package notificationhub
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -11,131 +12,132 @@ import (
 	"github.com/hashicorp/go-azure-helpers/lang/response"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
-	"github.com/hashicorp/go-azure-helpers/resourcemanager/tags"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/notificationhubs/2023-09-01/namespaces"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/timeouts"
 )
 
 var _ sdk.DataSource = NotificationHubNamespaceDataSource{}
 
 type NotificationHubNamespaceDataSource struct{}
 
-type NotificationHubNamespaceDataSourceModel struct{}
+type NotificationHubNamespaceDataSourceModel struct {
+	Name                  string            `tfschema:"name"`
+	ResourceGroupName     string            `tfschema:"resource_group_name"`
+	Location              string            `tfschema:"location"`
+	SkuName               string            `tfschema:"sku_name"`
+	Enabled               bool              `tfschema:"enabled"`
+	NamespaceType         string            `tfschema:"namespace_type"`
+	ZoneRedundancyEnabled bool              `tfschema:"zone_redundancy_enabled"`
+	ReplicationRegion     string            `tfschema:"replication_region"`
+	ServicebusEndpoint    string            `tfschema:"servicebus_endpoint"`
+	Tags                  map[string]string `tfschema:"tags"`
+}
 
-func (r NotificationHubNamespaceDataSource) Arguments() map[string]*pluginsdk.Schema {}
-
-func (r NotificationHubNamespaceDataSource) Attributes() map[string]*pluginsdk.Schema {}
-
-func (r NotificationHubNamespaceDataSource) IDValidationFunc() pluginsdk.SchemaValidateFunc {}
-
-func (r NotificationHubNamespaceDataSource) ResourceType() string {}
-
-func (NotificationHubNamespaceDataSource) ModelObject() interface{} {}
-
-func (r NotificationHubNamespaceDataSource) Read() sdk.ResourceFunc {}
-
-func dataSourceNotificationHubNamespace() *pluginsdk.Resource {
-	return &pluginsdk.Resource{
-		Read: resourceArmDataSourceNotificationHubNamespaceRead,
-
-		Timeouts: &pluginsdk.ResourceTimeout{
-			Read: pluginsdk.DefaultTimeout(5 * time.Minute),
+func (r NotificationHubNamespaceDataSource) Arguments() map[string]*pluginsdk.Schema {
+	return map[string]*pluginsdk.Schema{
+		"name": {
+			Type:     pluginsdk.TypeString,
+			Required: true,
 		},
 
-		Schema: map[string]*pluginsdk.Schema{
-			"name": {
-				Type:     pluginsdk.TypeString,
-				Required: true,
-			},
+		"resource_group_name": commonschema.ResourceGroupNameForDataSource(),
+	}
+}
 
-			"resource_group_name": commonschema.ResourceGroupNameForDataSource(),
+func (r NotificationHubNamespaceDataSource) Attributes() map[string]*pluginsdk.Schema {
+	return map[string]*pluginsdk.Schema{
+		"location": commonschema.LocationComputed(),
 
-			"location": commonschema.LocationComputed(),
-
-			"sku": {
-				Type:     pluginsdk.TypeList,
-				Computed: true,
-				Elem: &pluginsdk.Resource{
-					Schema: map[string]*pluginsdk.Schema{
-						"name": {
-							Type:     pluginsdk.TypeString,
-							Computed: true,
-						},
+		"sku": {
+			Type:     pluginsdk.TypeList,
+			Computed: true,
+			Elem: &pluginsdk.Resource{
+				Schema: map[string]*pluginsdk.Schema{
+					"name": {
+						Type:     pluginsdk.TypeString,
+						Computed: true,
 					},
 				},
 			},
+		},
 
-			"enabled": {
-				Type:     pluginsdk.TypeBool,
-				Computed: true,
-			},
+		"enabled": {
+			Type:     pluginsdk.TypeBool,
+			Computed: true,
+		},
 
-			"namespace_type": {
-				Type:     pluginsdk.TypeString,
-				Computed: true,
-			},
+		"namespace_type": {
+			Type:     pluginsdk.TypeString,
+			Computed: true,
+		},
 
-			"tags": commonschema.TagsDataSource(),
+		"tags": commonschema.TagsDataSource(),
 
-			"servicebus_endpoint": {
-				Type:     pluginsdk.TypeString,
-				Computed: true,
-			},
+		"servicebus_endpoint": {
+			Type:     pluginsdk.TypeString,
+			Computed: true,
 		},
 	}
 }
 
-func resourceArmDataSourceNotificationHubNamespaceRead(d *pluginsdk.ResourceData, meta interface{}) error {
-	client := meta.(*clients.Client).NotificationHubs.NamespacesClient
-	subscriptionId := meta.(*clients.Client).Account.SubscriptionId
-	ctx, cancel := timeouts.ForRead(meta.(*clients.Client).StopContext, d)
-	defer cancel()
-
-	id := namespaces.NewNamespaceID(subscriptionId, d.Get("resource_group_name").(string), d.Get("name").(string))
-	resp, err := client.Get(ctx, id)
-	if err != nil {
-		if response.WasNotFound(resp.HttpResponse) {
-			return fmt.Errorf("%s was not found", id)
-		}
-
-		return fmt.Errorf("retrieving %s: %+v", id, err)
-	}
-
-	d.SetId(id.ID())
-	d.Set("name", id.NamespaceName)
-	d.Set("resource_group_name", id.ResourceGroupName)
-
-	if model := resp.Model; model != nil {
-		d.Set("location", location.NormalizeNilable(&model.Location))
-		sku := flattenNotificationHubNamespaceDataSourceNamespacesSku(&model.Sku)
-		if err := d.Set("sku", sku); err != nil {
-			return fmt.Errorf("setting `sku`: %+v", err)
-		}
-
-		if props := model.Properties; props != nil {
-			d.Set("enabled", props.Enabled)
-			d.Set("namespace_type", string(pointer.From(props.NamespaceType)))
-			d.Set("servicebus_endpoint", props.ServiceBusEndpoint)
-		}
-
-		return d.Set("tags", tags.Flatten(model.Tags))
-	}
-
-	return nil
+func (r NotificationHubNamespaceDataSource) IDValidationFunc() pluginsdk.SchemaValidateFunc {
+	return namespaces.ValidateNamespaceID
 }
 
-func flattenNotificationHubNamespaceDataSourceNamespacesSku(input *namespaces.Sku) []interface{} {
-	outputs := make([]interface{}, 0)
-	if input == nil {
-		return outputs
-	}
+func (r NotificationHubNamespaceDataSource) ResourceType() string {
+	return "azurerm_notification_hub_namespace"
+}
 
-	output := map[string]interface{}{
-		"name": string(input.Name),
+func (NotificationHubNamespaceDataSource) ModelObject() interface{} {
+	return NotificationHubNamespaceDataSourceModel{}
+}
+
+func (r NotificationHubNamespaceDataSource) Read() sdk.ResourceFunc {
+	return sdk.ResourceFunc{
+		Timeout: *pluginsdk.DefaultTimeout(5 * time.Minute),
+
+		Func: func(ctx context.Context, metadata sdk.ResourceMetaData) error {
+			client := metadata.Client.NotificationHubs.NamespacesClient
+			subscriptionId := metadata.Client.Account.SubscriptionId
+
+			var config NotificationHubNamespaceDataSourceModel
+			if err := metadata.Decode(&config); err != nil {
+				return fmt.Errorf("decoding: %+v", err)
+			}
+
+			id := namespaces.NewNamespaceID(subscriptionId, config.ResourceGroupName, config.Name)
+			resp, err := client.Get(ctx, id)
+			if err != nil {
+				if response.WasNotFound(resp.HttpResponse) {
+					return fmt.Errorf("%s was not found", id)
+				}
+
+				return fmt.Errorf("retrieving %s: %+v", id, err)
+			}
+
+			metadata.SetID(id)
+
+			output := NotificationHubNamespaceDataSourceModel{
+				Name:              id.NamespaceName,
+				ResourceGroupName: id.ResourceGroupName,
+			}
+
+			if model := resp.Model; model != nil {
+				output.Location = location.NormalizeNilable(&model.Location)
+				output.SkuName = string(model.Sku.Name)
+
+				if props := model.Properties; props != nil {
+					output.Enabled = pointer.From(props.Enabled)
+					output.NamespaceType = string(pointer.From(props.NamespaceType))
+					output.ServicebusEndpoint = pointer.From(props.ServiceBusEndpoint)
+				}
+
+				output.Tags = pointer.From(model.Tags)
+				return metadata.Encode(&output)
+			}
+
+			return nil
+		},
 	}
-	outputs = append(outputs, output)
-	return outputs
 }
