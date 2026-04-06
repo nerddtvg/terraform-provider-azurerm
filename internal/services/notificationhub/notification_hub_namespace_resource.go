@@ -159,7 +159,7 @@ func (r NotificationHubNamespaceResource) ResourceType() string {
 }
 
 func (NotificationHubNamespaceResource) ModelObject() interface{} {
-	return NotificationHubNamespaceResourceModel{}
+	return &NotificationHubNamespaceResourceModel{}
 }
 
 func (r NotificationHubNamespaceResource) Create() sdk.ResourceFunc {

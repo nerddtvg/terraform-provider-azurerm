@@ -90,7 +90,7 @@ func (r NotificationHubNamespaceDataSource) ResourceType() string {
 }
 
 func (NotificationHubNamespaceDataSource) ModelObject() interface{} {
-	return NotificationHubNamespaceDataSourceModel{}
+	return &NotificationHubNamespaceDataSourceModel{}
 }
 
 func (r NotificationHubNamespaceDataSource) Read() sdk.ResourceFunc {

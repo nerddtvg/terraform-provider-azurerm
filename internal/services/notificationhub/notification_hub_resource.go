@@ -194,7 +194,7 @@ func (r NotificationHubResource) ResourceType() string {
 }
 
 func (NotificationHubResource) ModelObject() interface{} {
-	return NotificationHubResourceModel{}
+	return &NotificationHubResourceModel{}
 }
 
 func (r NotificationHubResource) Create() sdk.ResourceFunc {

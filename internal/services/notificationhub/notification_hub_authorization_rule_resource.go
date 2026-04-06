@@ -141,7 +141,7 @@ func (r NotificationHubAuthorizationRuleResource) ResourceType() string {
 }
 
 func (NotificationHubAuthorizationRuleResource) ModelObject() interface{} {
-	return NotificationHubAuthorizationRuleResourceModel{}
+	return &NotificationHubAuthorizationRuleResourceModel{}
 }
 
 func (r NotificationHubAuthorizationRuleResource) Create() sdk.ResourceFunc {

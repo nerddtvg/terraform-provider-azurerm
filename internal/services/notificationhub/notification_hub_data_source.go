@@ -110,7 +110,7 @@ func (r NotificationHubDataSource) ResourceType() string {
 }
 
 func (NotificationHubDataSource) ModelObject() interface{} {
-	return NotificationHubDataSourceModel{}
+	return &NotificationHubDataSourceModel{}
 }
 
 func (r NotificationHubDataSource) Read() sdk.ResourceFunc {
