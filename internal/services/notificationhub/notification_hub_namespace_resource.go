@@ -200,7 +200,7 @@ func (r NotificationHubNamespaceResource) Create() sdk.ResourceFunc {
 					Name: namespaces.SkuName(config.SkuName),
 				},
 				Properties: &namespaces.NamespaceProperties{
-					NamespaceType:  &namespaceType,
+					NamespaceType:  pointer.To(namespaceType),
 					Enabled:        pointer.To(config.Enabled),
 					ZoneRedundancy: pointer.To(zoneRedundancy),
 				},
@@ -325,6 +325,7 @@ func (r NotificationHubNamespaceResource) Read() sdk.ResourceFunc {
 				config.Location = location.NormalizeNilable(&model.Location)
 				config.SkuName = string(model.Sku.Name)
 				if props := model.Properties; props != nil {
+					config.NamespaceType = string(pointer.From(props.NamespaceType))
 					config.Enabled = pointer.From(props.Enabled)
 					config.ServicebusEndpoint = pointer.From(props.ServiceBusEndpoint)
 					config.ZoneRedundancyEnabled = pointer.From(props.ZoneRedundancy) == namespaces.ZoneRedundancyPreferenceEnabled
