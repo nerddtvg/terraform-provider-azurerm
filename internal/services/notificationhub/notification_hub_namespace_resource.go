@@ -38,7 +38,7 @@ type NotificationHubNamespaceResourceModel struct {
 	NamespaceType         string            `tfschema:"namespace_type"`
 	ZoneRedundancyEnabled bool              `tfschema:"zone_redundancy_enabled"`
 	ReplicationRegion     string            `tfschema:"replication_region"`
-	ServicebugEndpoint    string            `tfschema:"servicebus_endpoint"`
+	ServicebusEndpoint    string            `tfschema:"servicebus_endpoint"`
 	Tags                  map[string]string `tfschema:"tags"`
 }
 
@@ -326,7 +326,7 @@ func (r NotificationHubNamespaceResource) Read() sdk.ResourceFunc {
 				config.SkuName = string(model.Sku.Name)
 				if props := model.Properties; props != nil {
 					config.Enabled = pointer.From(props.Enabled)
-					config.ServicebugEndpoint = pointer.From(props.ServiceBusEndpoint)
+					config.ServicebusEndpoint = pointer.From(props.ServiceBusEndpoint)
 					config.ZoneRedundancyEnabled = pointer.From(props.ZoneRedundancy) == namespaces.ZoneRedundancyPreferenceEnabled
 					replicationRegion := string(namespaces.ReplicationRegionDefault)
 					if v := pointer.FromEnum(props.ReplicationRegion); v != "" {
