@@ -380,9 +380,9 @@ func (r NotificationHubResource) Read() sdk.ResourceFunc {
 
 			if credentialsModel := credentials.Model; credentialsModel != nil {
 				if props := credentialsModel.Properties; props != nil {
-					output.ApnsCredential = []ApnsCredentialModel{flattenNotificationHubsAPNSCredentials(props.ApnsCredential)}
-					output.BrowserCredential = []BrowserCredentialModel{flattenNotificationHubsBrowserCredentials(props.BrowserCredential)}
-					output.GcmCredential = []GcmCredentialModel{flattenNotificationHubsGCMCredentials(props.GcmCredential)}
+					output.ApnsCredential = flattenNotificationHubsAPNSCredentials(props.ApnsCredential)
+					output.BrowserCredential = flattenNotificationHubsBrowserCredentials(props.BrowserCredential)
+					output.GcmCredential = flattenNotificationHubsGCMCredentials(props.GcmCredential)
 				}
 			}
 
@@ -390,11 +390,9 @@ func (r NotificationHubResource) Read() sdk.ResourceFunc {
 				output.Location = location.NormalizeNilable(&model.Location)
 
 				output.Tags = pointer.From(model.Tags)
-
-				return metadata.Encode(&output)
 			}
 
-			return nil
+			return metadata.Encode(&output)
 		},
 	}
 }
@@ -625,12 +623,12 @@ func expandNotificationHubsBrowserCredentials(config []BrowserCredentialModel) *
 	return &credentials
 }
 
-func flattenNotificationHubsAPNSCredentials(input *hubs.ApnsCredential) ApnsCredentialModel {
-	output := ApnsCredentialModel{}
-
+func flattenNotificationHubsAPNSCredentials(input *hubs.ApnsCredential) []ApnsCredentialModel {
 	if input == nil {
-		return output
+		return []ApnsCredentialModel{}
 	}
+
+	output := ApnsCredentialModel{}
 
 	if bundleId := input.Properties.AppName; bundleId != nil {
 		output.BundleId = pointer.From(bundleId)
@@ -655,21 +653,21 @@ func flattenNotificationHubsAPNSCredentials(input *hubs.ApnsCredential) ApnsCred
 		output.Token = pointer.From(token)
 	}
 
-	return output
+	return []ApnsCredentialModel{output}
 }
 
-func flattenNotificationHubsBrowserCredentials(input *hubs.BrowserCredential) BrowserCredentialModel {
-	output := BrowserCredentialModel{}
-
+func flattenNotificationHubsBrowserCredentials(input *hubs.BrowserCredential) []BrowserCredentialModel {
 	if input == nil {
-		return output
+		return []BrowserCredentialModel{}
 	}
+
+	output := BrowserCredentialModel{}
 
 	output.Subject = input.Properties.Subject
 	output.VapidPrivateKey = input.Properties.VapidPrivateKey
 	output.VapidPublicKey = input.Properties.VapidPublicKey
 
-	return output
+	return []BrowserCredentialModel{output}
 }
 
 func expandNotificationHubsGCMCredentials(inputs []GcmCredentialModel) *hubs.GcmCredential {
@@ -686,14 +684,14 @@ func expandNotificationHubsGCMCredentials(inputs []GcmCredentialModel) *hubs.Gcm
 	return &credentials
 }
 
-func flattenNotificationHubsGCMCredentials(input *hubs.GcmCredential) GcmCredentialModel {
-	output := GcmCredentialModel{}
-
+func flattenNotificationHubsGCMCredentials(input *hubs.GcmCredential) []GcmCredentialModel {
 	if input == nil {
-		return output
+		return []GcmCredentialModel{}
 	}
+
+	output := GcmCredentialModel{}
 
 	output.ApiKey = input.Properties.GoogleApiKey
 
-	return output
+	return []GcmCredentialModel{output}
 }
