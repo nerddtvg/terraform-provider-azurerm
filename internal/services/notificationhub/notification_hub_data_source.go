@@ -121,7 +121,7 @@ func (r NotificationHubDataSource) Read() sdk.ResourceFunc {
 			client := metadata.Client.NotificationHubs.HubsClient
 			subscriptionId := metadata.Client.Account.SubscriptionId
 
-			var config NotificationHubResourceModel
+			var config NotificationHubDataSourceModel
 			if err := metadata.Decode(&config); err != nil {
 				return fmt.Errorf("decoding: %+v", err)
 			}
