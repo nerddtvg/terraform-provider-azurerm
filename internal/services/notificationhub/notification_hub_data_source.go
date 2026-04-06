@@ -22,14 +22,13 @@ var _ sdk.DataSource = NotificationHubDataSource{}
 type NotificationHubDataSource struct{}
 
 type NotificationHubDataSourceModel struct {
-	Name              string                   `tfschema:"name"`
-	NamespaceName     string                   `tfschema:"namespace_name"`
-	ResourceGroupName string                   `tfschema:"resource_group_name"`
-	Location          string                   `tfschema:"location"`
-	ApnsCredential    []ApnsCredentialModel    `tfschema:"apns_credential"`    // Defined in notification_hub_resource
-	BrowserCredential []BrowserCredentialModel `tfschema:"browser_credential"` // Defined in notification_hub_resource
-	GcmCredential     []GcmCredentialModel     `tfschema:"gcm_credential"`     // Defined in notification_hub_resource
-	Tags              map[string]string        `tfschema:"tags"`
+	Name              string                `tfschema:"name"`
+	NamespaceName     string                `tfschema:"namespace_name"`
+	ResourceGroupName string                `tfschema:"resource_group_name"`
+	Location          string                `tfschema:"location"`
+	ApnsCredential    []ApnsCredentialModel `tfschema:"apns_credential"` // Defined in notification_hub_resource
+	GcmCredential     []GcmCredentialModel  `tfschema:"gcm_credential"`  // Defined in notification_hub_resource
+	Tags              map[string]string     `tfschema:"tags"`
 }
 
 func (r NotificationHubDataSource) Arguments() map[string]*pluginsdk.Schema {
