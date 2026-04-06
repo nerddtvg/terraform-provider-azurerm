@@ -21,11 +21,11 @@ type notificationHubPoller struct {
 }
 
 var (
-	pollingSuccess = pollers.PollResult{
+	NotificationHubPollerSuccess = pollers.PollResult{
 		PollInterval: 5 * time.Second,
 		Status:       pollers.PollingStatusSucceeded,
 	}
-	pollingInProgress = pollers.PollResult{
+	NotificationHubPollerInProgress = pollers.PollResult{
 		HttpResponse: nil,
 		PollInterval: 5 * time.Second,
 		Status:       pollers.PollingStatusInProgress,
@@ -43,11 +43,11 @@ func (p notificationHubPoller) Poll(ctx context.Context) (*pollers.PollResult, e
 	resp, err := p.client.NotificationHubsGet(ctx, p.id)
 	if err != nil {
 		if response.WasNotFound(resp.HttpResponse) {
-			return &pollingInProgress, nil
+			return &NotificationHubPollerInProgress, nil
 		}
 
 		return nil, fmt.Errorf("retrieving %s: %+v", p.id, err)
 	}
 
-	return &pollingSuccess, nil
+	return &NotificationHubPollerSuccess, nil
 }

@@ -7,133 +7,46 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strconv"
 	"time"
 
 	"github.com/hashicorp/go-azure-helpers/lang/pointer"
 	"github.com/hashicorp/go-azure-helpers/lang/response"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
-	"github.com/hashicorp/go-azure-helpers/resourcemanager/tags"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/notificationhubs/2023-09-01/namespaces"
+	"github.com/hashicorp/go-azure-sdk/sdk/client/pollers"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/services/notificationhub/custompollers"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/notificationhub/migration"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/timeouts"
 )
+
+var notificationHubNamespaceResourceName = "azurerm_notification_hub_namespace"
 
 var _ sdk.ResourceWithUpdate = NotificationHubNamespaceResource{}
 
 type NotificationHubNamespaceResource struct{}
 
-type NotificationHubNamespaceResourceModel struct{}
+type NotificationHubNamespaceResourceModel struct {
+	Name                  string            `tfschema:"name"`
+	ResourceGroupName     string            `tfschema:"resource_group_name"`
+	Location              string            `tfschema:"location"`
+	SkuName               string            `tfschema:"sku_name"`
+	Enabled               bool              `tfschema:"enabled"`
+	NamespaceType         string            `tfschema:"namespace_type"`
+	ZoneRedundancyEnabled bool              `tfschema:"zone_redundancy_enabled"`
+	ReplicationRegion     string            `tfschema:"replication_region"`
+	ServicebugEndpoint    string            `tfschema:"servicebus_endpoint"`
+	Tags                  map[string]string `tfschema:"tags"`
+}
 
-func (r NotificationHubNamespaceResource) Arguments() map[string]*pluginsdk.Schema {}
-
-func (r NotificationHubNamespaceResource) Attributes() map[string]*pluginsdk.Schema {}
-
-func (r NotificationHubNamespaceResource) IDValidationFunc() pluginsdk.SchemaValidateFunc {}
-
-func (r NotificationHubNamespaceResource) ResourceType() string {}
-
-func (NotificationHubNamespaceResource) ModelObject() interface{} {}
-
-func (r NotificationHubNamespaceResource) Create() sdk.ResourceFunc {}
-
-func (r NotificationHubNamespaceResource) Update() sdk.ResourceFunc {}
-
-func (r NotificationHubNamespaceResource) Delete() sdk.ResourceFunc {}
-
-func (r NotificationHubNamespaceResource) Read() sdk.ResourceFunc {}
-
-var notificationHubNamespaceResourceName = "azurerm_notification_hub_namespace"
-
-func resourceNotificationHubNamespace() *pluginsdk.Resource {
-	return &pluginsdk.Resource{
-		Create: resourceNotificationHubNamespaceCreate,
-		Read:   resourceNotificationHubNamespaceRead,
-		Update: resourceNotificationHubNamespaceUpdate,
-		Delete: resourceNotificationHubNamespaceDelete,
-		Importer: pluginsdk.ImporterValidatingResourceId(func(id string) error {
-			_, err := namespaces.ParseNamespaceID(id)
-			return err
-		}),
-
-		Timeouts: &pluginsdk.ResourceTimeout{
-			Create: pluginsdk.DefaultTimeout(30 * time.Minute),
-			Read:   pluginsdk.DefaultTimeout(5 * time.Minute),
-			Update: pluginsdk.DefaultTimeout(30 * time.Minute),
-			Delete: pluginsdk.DefaultTimeout(30 * time.Minute),
-		},
-
-		SchemaVersion: 1,
-		StateUpgraders: pluginsdk.StateUpgrades(map[int]pluginsdk.StateUpgrade{
+func (r NotificationHubNamespaceResource) StateUpgraders() sdk.StateUpgradeData {
+	return sdk.StateUpgradeData{
+		SchemaVersion: 1, // This field references the version which the state migration updates the schema to i.e. v0 -> v1
+		Upgraders: map[int]pluginsdk.StateUpgrade{
 			0: migration.NotificationHubNamespaceResourceV0ToV1{},
-		}),
-
-		Schema: map[string]*pluginsdk.Schema{
-			"name": {
-				Type:     pluginsdk.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-
-			"resource_group_name": commonschema.ResourceGroupName(),
-
-			"location": commonschema.Location(),
-
-			"sku_name": {
-				Type:     pluginsdk.TypeString,
-				Required: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(namespaces.SkuNameBasic),
-					string(namespaces.SkuNameFree),
-					string(namespaces.SkuNameStandard),
-				}, false),
-			},
-
-			"enabled": {
-				Type:     pluginsdk.TypeBool,
-				Optional: true,
-				ForceNew: true,
-				Default:  true,
-			},
-
-			"namespace_type": {
-				Type:     pluginsdk.TypeString,
-				Required: true,
-				ForceNew: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(namespaces.NamespaceTypeMessaging),
-					string(namespaces.NamespaceTypeNotificationHub),
-				}, false),
-			},
-
-			"zone_redundancy_enabled": {
-				Type:     pluginsdk.TypeBool,
-				Optional: true,
-				Default:  false,
-				ForceNew: true,
-			},
-
-			"replication_region": {
-				Type:             pluginsdk.TypeString,
-				Optional:         true,
-				ForceNew:         true,
-				Default:          namespaces.ReplicationRegionDefault,
-				ValidateFunc:     validation.StringInSlice(namespaces.PossibleValuesForReplicationRegion(), true),
-				DiffSuppressFunc: location.DiffSuppressFunc,
-			},
-
-			"tags": commonschema.Tags(),
-
-			"servicebus_endpoint": {
-				Type:     pluginsdk.TypeString,
-				Computed: true,
-			},
 		},
 	}
 }
@@ -169,157 +82,262 @@ func resourceNotificationHubNamespaceCreate(d *pluginsdk.ResourceData, meta inte
 		Location: location.Normalize(d.Get("location").(string)),
 		Sku: namespaces.Sku{
 			Name: namespaces.SkuName(d.Get("sku_name").(string)),
+func (r NotificationHubNamespaceResource) Arguments() map[string]*pluginsdk.Schema {
+	return map[string]*pluginsdk.Schema{
+		"name": {
+			Type:     pluginsdk.TypeString,
+			Required: true,
+			ForceNew: true,
 		},
-		Properties: &namespaces.NamespaceProperties{
-			NamespaceType:  &namespaceType,
-			Enabled:        pointer.To(d.Get("enabled").(bool)),
-			ZoneRedundancy: pointer.To(zoneRedundancy),
+
+		"resource_group_name": commonschema.ResourceGroupName(),
+
+		"location": commonschema.Location(),
+
+		"sku_name": {
+			Type:     pluginsdk.TypeString,
+			Required: true,
+			ValidateFunc: validation.StringInSlice([]string{
+				string(namespaces.SkuNameBasic),
+				string(namespaces.SkuNameFree),
+				string(namespaces.SkuNameStandard),
+			}, false),
 		},
-		Tags: tags.Expand(d.Get("tags").(map[string]interface{})),
+
+		"enabled": {
+			Type:     pluginsdk.TypeBool,
+			Optional: true,
+			ForceNew: true,
+			Default:  true,
+		},
+
+		"namespace_type": {
+			Type:     pluginsdk.TypeString,
+			Required: true,
+			ForceNew: true,
+			ValidateFunc: validation.StringInSlice([]string{
+				string(namespaces.NamespaceTypeMessaging),
+				string(namespaces.NamespaceTypeNotificationHub),
+			}, false),
+		},
+
+		"zone_redundancy_enabled": {
+			Type:     pluginsdk.TypeBool,
+			Optional: true,
+			Default:  false,
+			ForceNew: true,
+		},
+
+		"replication_region": {
+			Type:             pluginsdk.TypeString,
+			Optional:         true,
+			ForceNew:         true,
+			Default:          namespaces.ReplicationRegionDefault,
+			ValidateFunc:     validation.StringInSlice(namespaces.PossibleValuesForReplicationRegion(), true),
+			DiffSuppressFunc: location.DiffSuppressFunc,
+		},
+
+		"tags": commonschema.Tags(),
 	}
-
-	if v, ok := d.GetOk("replication_region"); ok {
-		parameters.Properties.ReplicationRegion = pointer.To(namespaces.ReplicationRegion(location.Normalize(v.(string))))
-	}
-
-	if _, err := client.CreateOrUpdate(ctx, id, parameters); err != nil {
-		return fmt.Errorf("creating %s: %+v", id, err)
-	}
-
-	log.Printf("[DEBUG] Waiting for %s to be created..", id)
-	stateConf := &pluginsdk.StateChangeConf{
-		Pending:                   []string{"404"},
-		Target:                    []string{"200"},
-		Refresh:                   notificationHubNamespaceStateRefreshFunc(ctx, client, id),
-		MinTimeout:                15 * time.Second,
-		ContinuousTargetOccurence: 10,
-	}
-
-	stateConf.Timeout = d.Timeout(pluginsdk.TimeoutCreate)
-
-	if _, err := stateConf.WaitForStateContext(ctx); err != nil {
-		return fmt.Errorf("waiting for %ss to finish replicating: %+v", id, err)
-	}
-
-	d.SetId(id.ID())
-	return resourceNotificationHubNamespaceRead(d, meta)
 }
 
-func resourceNotificationHubNamespaceUpdate(d *pluginsdk.ResourceData, meta interface{}) error {
-	client := meta.(*clients.Client).NotificationHubs.NamespacesClient
-	ctx, cancel := timeouts.ForUpdate(meta.(*clients.Client).StopContext, d)
-	defer cancel()
-
-	id, err := namespaces.ParseNamespaceID(d.Id())
-	if err != nil {
-		return err
-	}
-
-	parameters := namespaces.NamespacePatchParameters{
-		Properties: &namespaces.NamespaceProperties{
-			NamespaceType: pointer.To(namespaces.NamespaceType(d.Get("namespace_type").(string))),
-			Enabled:       pointer.To(d.Get("enabled").(bool)),
+func (r NotificationHubNamespaceResource) Attributes() map[string]*pluginsdk.Schema {
+	return map[string]*pluginsdk.Schema{
+		"servicebus_endpoint": {
+			Type:     pluginsdk.TypeString,
+			Computed: true,
 		},
 	}
-
-	if d.HasChange("sku_name") {
-		parameters.Sku = &namespaces.Sku{
-			Name: namespaces.SkuName(d.Get("sku_name").(string)),
-		}
-	}
-
-	if d.HasChange("tags") {
-		parameters.Tags = tags.Expand(d.Get("tags").(map[string]interface{}))
-	}
-
-	if _, err := client.Update(ctx, *id, parameters); err != nil {
-		return fmt.Errorf("updating %s: %+v", id, err)
-	}
-
-	return resourceNotificationHubNamespaceRead(d, meta)
 }
 
-func resourceNotificationHubNamespaceRead(d *pluginsdk.ResourceData, meta interface{}) error {
-	client := meta.(*clients.Client).NotificationHubs.NamespacesClient
-	ctx, cancel := timeouts.ForRead(meta.(*clients.Client).StopContext, d)
-	defer cancel()
+func (r NotificationHubNamespaceResource) IDValidationFunc() pluginsdk.SchemaValidateFunc {
+	return namespaces.ValidateNamespaceID
+}
 
-	id, err := namespaces.ParseNamespaceID(d.Id())
-	if err != nil {
-		return err
-	}
+func (r NotificationHubNamespaceResource) ResourceType() string {
+	return notificationHubNamespaceResourceName
+}
 
-	resp, err := client.Get(ctx, *id)
-	if err != nil {
-		if response.WasNotFound(resp.HttpResponse) {
-			log.Printf("[DEBUG] %s was not found - removing from state!", *id)
-			d.SetId("")
+func (NotificationHubNamespaceResource) ModelObject() interface{} {
+	return NotificationHubNamespaceResourceModel{}
+}
+
+func (r NotificationHubNamespaceResource) Create() sdk.ResourceFunc {
+	return sdk.ResourceFunc{
+		Timeout: *pluginsdk.DefaultTimeout(30 * time.Minute),
+
+		Func: func(ctx context.Context, metadata sdk.ResourceMetaData) error {
+			client := metadata.Client.NotificationHubs.NamespacesClient
+			subscriptionId := metadata.Client.Account.SubscriptionId
+
+			var config NotificationHubNamespaceResourceModel
+			if err := metadata.Decode(&config); err != nil {
+				return fmt.Errorf("decoding: %+v", err)
+			}
+
+			id := namespaces.NewNamespaceID(subscriptionId, config.ResourceGroupName, config.Name)
+
+			existing, err := client.Get(ctx, id)
+			if err != nil {
+				if !response.WasNotFound(existing.HttpResponse) {
+					return fmt.Errorf("checking for presence of existing %s: %+v", id, err)
+				}
+			}
+
+			if !response.WasNotFound(existing.HttpResponse) {
+				return tf.ImportAsExistsError("azurerm_notification_hub_namespace", id.ID())
+			}
+
+			zoneRedundancy := namespaces.ZoneRedundancyPreferenceDisabled
+			if config.ZoneRedundancyEnabled {
+				zoneRedundancy = namespaces.ZoneRedundancyPreferenceEnabled
+			}
+
+			namespaceType := namespaces.NamespaceType(config.NamespaceType)
+			parameters := namespaces.NamespaceResource{
+				Location: location.Normalize(config.Location),
+				Sku: namespaces.Sku{
+					Name: namespaces.SkuName(config.SkuName),
+				},
+				Properties: &namespaces.NamespaceProperties{
+					NamespaceType:  &namespaceType,
+					Enabled:        pointer.To(config.Enabled),
+					ZoneRedundancy: pointer.To(zoneRedundancy),
+				},
+				Tags: pointer.To(config.Tags),
+			}
+
+			parameters.Properties.ReplicationRegion = pointer.To(namespaces.ReplicationRegion(location.Normalize(config.ReplicationRegion)))
+
+			if _, err := client.CreateOrUpdate(ctx, id, parameters); err != nil {
+				return fmt.Errorf("creating %s: %+v", id, err)
+			}
+
+			log.Printf("[DEBUG] Waiting for %s to be created..", id)
+
+			pollerType := custompollers.NewNotificationHubNamespacePoller(client, id)
+			poller := pollers.NewPoller(pollerType, 10*time.Second, pollers.DefaultNumberOfDroppedConnectionsToAllow)
+			if err := poller.PollUntilDone(ctx); err != nil {
+				return err
+			}
+
+			metadata.SetID(id)
 			return nil
-		}
-
-		return fmt.Errorf("retrieving %s: %+v", *id, err)
+		},
 	}
-
-	d.Set("name", id.NamespaceName)
-	d.Set("resource_group_name", id.ResourceGroupName)
-
-	if model := resp.Model; model != nil {
-		d.Set("location", location.NormalizeNilable(&model.Location))
-		d.Set("sku_name", string(model.Sku.Name))
-		if props := model.Properties; props != nil {
-			d.Set("enabled", props.Enabled)
-			d.Set("servicebus_endpoint", props.ServiceBusEndpoint)
-			d.Set("zone_redundancy_enabled", pointer.From(props.ZoneRedundancy) == namespaces.ZoneRedundancyPreferenceEnabled)
-			replicationRegion := string(namespaces.ReplicationRegionDefault)
-			if v := pointer.FromEnum(props.ReplicationRegion); v != "" {
-				replicationRegion = v
-			}
-			d.Set("replication_region", location.Normalize(replicationRegion))
-		}
-
-		if err := tags.FlattenAndSet(d, model.Tags); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
-func resourceNotificationHubNamespaceDelete(d *pluginsdk.ResourceData, meta interface{}) error {
-	client := meta.(*clients.Client).NotificationHubs.NamespacesClient
-	ctx, cancel := timeouts.ForDelete(meta.(*clients.Client).StopContext, d)
-	defer cancel()
+func (r NotificationHubNamespaceResource) Update() sdk.ResourceFunc {
+	return sdk.ResourceFunc{
+		Timeout: *pluginsdk.DefaultTimeout(30 * time.Minute),
 
-	id, err := namespaces.ParseNamespaceID(d.Id())
-	if err != nil {
-		return err
-	}
+		Func: func(ctx context.Context, metadata sdk.ResourceMetaData) error {
+			client := metadata.Client.NotificationHubs.NamespacesClient
 
-	resp, err := client.Delete(ctx, *id)
-	if err != nil {
-		if !response.WasNotFound(resp.HttpResponse) {
-			return fmt.Errorf("deleting %s: %+v", *id, err)
-		}
-	}
-
-	return nil
-}
-
-func notificationHubNamespaceStateRefreshFunc(ctx context.Context, client *namespaces.NamespacesClient, id namespaces.NamespaceId) pluginsdk.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		resp, err := client.Get(ctx, id)
-		statusCode := "dropped connection"
-		if resp.HttpResponse != nil {
-			statusCode = strconv.Itoa(resp.HttpResponse.StatusCode)
-		}
-
-		if err != nil {
-			if response.WasNotFound(resp.HttpResponse) {
-				return nil, statusCode, nil
+			id, err := namespaces.ParseNamespaceID(metadata.ResourceData.Id())
+			if err != nil {
+				return err
 			}
 
-			return nil, "", fmt.Errorf("retrieving %s: %+v", id, err)
-		}
+			var config NotificationHubNamespaceResourceModel
+			if err := metadata.Decode(&config); err != nil {
+				return fmt.Errorf("decoding: %+v", err)
+			}
 
-		return resp, statusCode, nil
+			parameters := namespaces.NamespacePatchParameters{
+				Properties: &namespaces.NamespaceProperties{
+					NamespaceType: pointer.To(namespaces.NamespaceType(config.NamespaceType)),
+					Enabled:       pointer.To(config.Enabled),
+				},
+			}
+
+			if metadata.ResourceDiff.HasChange("sku_name") {
+				parameters.Sku = &namespaces.Sku{
+					Name: namespaces.SkuName(config.SkuName),
+				}
+			}
+
+			if metadata.ResourceDiff.HasChange("tags") {
+				parameters.Tags = pointer.To(config.Tags)
+			}
+
+			if _, err := client.Update(ctx, *id, parameters); err != nil {
+				return fmt.Errorf("updating %s: %+v", id, err)
+			}
+
+			return nil
+		},
+	}
+}
+
+func (r NotificationHubNamespaceResource) Delete() sdk.ResourceFunc {
+	return sdk.ResourceFunc{
+		Timeout: *pluginsdk.DefaultTimeout(30 * time.Minute),
+
+		Func: func(ctx context.Context, metadata sdk.ResourceMetaData) error {
+			client := metadata.Client.NotificationHubs.NamespacesClient
+
+			id, err := namespaces.ParseNamespaceID(metadata.ResourceData.Id())
+			if err != nil {
+				return err
+			}
+
+			resp, err := client.Delete(ctx, *id)
+			if err != nil {
+				if !response.WasNotFound(resp.HttpResponse) {
+					return fmt.Errorf("deleting %s: %+v", *id, err)
+				}
+			}
+
+			return nil
+		},
+	}
+}
+
+func (r NotificationHubNamespaceResource) Read() sdk.ResourceFunc {
+	return sdk.ResourceFunc{
+		Timeout: *pluginsdk.DefaultTimeout(5 * time.Minute),
+
+		Func: func(ctx context.Context, metadata sdk.ResourceMetaData) error {
+			client := metadata.Client.NotificationHubs.NamespacesClient
+
+			id, err := namespaces.ParseNamespaceID(metadata.ResourceData.Id())
+			if err != nil {
+				return err
+			}
+
+			resp, err := client.Get(ctx, *id)
+			if err != nil {
+				if response.WasNotFound(resp.HttpResponse) {
+					log.Printf("[DEBUG] %s was not found - removing from state!", *id)
+					return metadata.MarkAsGone(id)
+				}
+
+				return fmt.Errorf("retrieving %s: %+v", *id, err)
+			}
+
+			config := NotificationHubNamespaceResourceModel{
+				Name:              id.NamespaceName,
+				ResourceGroupName: id.ResourceGroupName,
+			}
+
+			if model := resp.Model; model != nil {
+				config.Location = location.NormalizeNilable(&model.Location)
+				config.SkuName = string(model.Sku.Name)
+				if props := model.Properties; props != nil {
+					config.Enabled = pointer.From(props.Enabled)
+					config.ServicebugEndpoint = pointer.From(props.ServiceBusEndpoint)
+					config.ZoneRedundancyEnabled = pointer.From(props.ZoneRedundancy) == namespaces.ZoneRedundancyPreferenceEnabled
+					replicationRegion := string(namespaces.ReplicationRegionDefault)
+					if v := pointer.FromEnum(props.ReplicationRegion); v != "" {
+						replicationRegion = v
+					}
+					config.ReplicationRegion = location.Normalize(replicationRegion)
+				}
+
+				config.Tags = pointer.From(model.Tags)
+			}
+			return metadata.Encode(&config)
+		},
 	}
 }
