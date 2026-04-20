@@ -22,16 +22,20 @@ var _ sdk.DataSource = NotificationHubNamespaceDataSource{}
 type NotificationHubNamespaceDataSource struct{}
 
 type NotificationHubNamespaceDataSourceModel struct {
-	Name                  string            `tfschema:"name"`
-	ResourceGroupName     string            `tfschema:"resource_group_name"`
-	Location              string            `tfschema:"location"`
-	SkuName               string            `tfschema:"sku_name"`
-	Enabled               bool              `tfschema:"enabled"`
-	NamespaceType         string            `tfschema:"namespace_type"`
-	ZoneRedundancyEnabled bool              `tfschema:"zone_redundancy_enabled"`
-	ReplicationRegion     string            `tfschema:"replication_region"`
-	ServicebusEndpoint    string            `tfschema:"servicebus_endpoint"`
-	Tags                  map[string]string `tfschema:"tags"`
+	Name                  string                                       `tfschema:"name"`
+	ResourceGroupName     string                                       `tfschema:"resource_group_name"`
+	Location              string                                       `tfschema:"location"`
+	Sku                   []NotificationHubNamespaceDataSourceSkuModel `tfschema:"sku"`
+	Enabled               bool                                         `tfschema:"enabled"`
+	NamespaceType         string                                       `tfschema:"namespace_type"`
+	ZoneRedundancyEnabled bool                                         `tfschema:"zone_redundancy_enabled"`
+	ReplicationRegion     string                                       `tfschema:"replication_region"`
+	ServicebusEndpoint    string                                       `tfschema:"servicebus_endpoint"`
+	Tags                  map[string]string                            `tfschema:"tags"`
+}
+
+type NotificationHubNamespaceDataSourceSkuModel struct {
+	Name string `tfschema:"name"`
 }
 
 func (r NotificationHubNamespaceDataSource) Arguments() map[string]*pluginsdk.Schema {
@@ -75,6 +79,16 @@ func (r NotificationHubNamespaceDataSource) Attributes() map[string]*pluginsdk.S
 		"tags": commonschema.TagsDataSource(),
 
 		"servicebus_endpoint": {
+			Type:     pluginsdk.TypeString,
+			Computed: true,
+		},
+
+		"zone_redundancy_enabled": {
+			Type:     pluginsdk.TypeBool,
+			Computed: true,
+		},
+
+		"replication_region": {
 			Type:     pluginsdk.TypeString,
 			Computed: true,
 		},
@@ -125,12 +139,20 @@ func (r NotificationHubNamespaceDataSource) Read() sdk.ResourceFunc {
 
 			if model := resp.Model; model != nil {
 				output.Location = location.NormalizeNilable(&model.Location)
-				output.SkuName = string(model.Sku.Name)
+				output.Sku = []NotificationHubNamespaceDataSourceSkuModel{{
+					Name: string(model.Sku.Name),
+				}}
 
 				if props := model.Properties; props != nil {
 					output.Enabled = pointer.From(props.Enabled)
 					output.NamespaceType = string(pointer.From(props.NamespaceType))
 					output.ServicebusEndpoint = pointer.From(props.ServiceBusEndpoint)
+					output.ZoneRedundancyEnabled = pointer.From(props.ZoneRedundancy) == namespaces.ZoneRedundancyPreferenceEnabled
+					replicationRegion := string(namespaces.ReplicationRegionDefault)
+					if v := pointer.FromEnum(props.ReplicationRegion); v != "" {
+						replicationRegion = v
+					}
+					output.ReplicationRegion = location.Normalize(replicationRegion)
 				}
 
 				output.Tags = pointer.From(model.Tags)
