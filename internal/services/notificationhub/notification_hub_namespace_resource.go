@@ -251,13 +251,13 @@ func (r NotificationHubNamespaceResource) Update() sdk.ResourceFunc {
 				},
 			}
 
-			if metadata.ResourceDiff.HasChange("sku_name") {
+			if metadata.ResourceData.HasChange("sku_name") {
 				parameters.Sku = &namespaces.Sku{
 					Name: namespaces.SkuName(config.SkuName),
 				}
 			}
 
-			if metadata.ResourceDiff.HasChange("tags") {
+			if metadata.ResourceData.HasChange("tags") {
 				parameters.Tags = pointer.To(config.Tags)
 			}
 
