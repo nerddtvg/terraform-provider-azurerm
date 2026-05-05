@@ -45,9 +45,14 @@ type NotificationHubResourceModel struct {
 	NamespaceName     string                   `tfschema:"namespace_name"`
 	ResourceGroupName string                   `tfschema:"resource_group_name"`
 	Location          string                   `tfschema:"location"`
+	AdmCredential     []AdmCredential          `tfschema:"adm_credential"`
 	ApnsCredential    []ApnsCredentialModel    `tfschema:"apns_credential"`
+	BaiduCredential   []BaiduCredential        `tfschema:"baidu_credential"`
 	BrowserCredential []BrowserCredentialModel `tfschema:"browser_credential"`
 	GcmCredential     []GcmCredentialModel     `tfschema:"gcm_credential"`
+	MpnsCredential    []MpnsCredential         `tfschema:"mpns_credential"`
+	WnsCredential     []WnsCredential          `tfschema:"wns_credential"`
+	XiaomiCredential  []XiaomiCredential       `tfschema:"xiaomi_credential"`
 	Tags              map[string]string        `tfschema:"tags"`
 }
 
@@ -96,6 +101,32 @@ func (r NotificationHubResource) Arguments() map[string]*pluginsdk.Schema {
 
 		"location": commonschema.Location(),
 
+		"adm_credential": {
+			Type:     pluginsdk.TypeList,
+			Optional: true,
+			MaxItems: 1,
+			Elem: &pluginsdk.Resource{
+				Schema: map[string]*pluginsdk.Schema{
+					"auth_token_uri": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+					"client_id": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+					"client_secret": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						Sensitive:    true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+				},
+			},
+		},
+
 		"apns_credential": {
 			Type:     pluginsdk.TypeList,
 			Optional: true,
@@ -135,6 +166,27 @@ func (r NotificationHubResource) Arguments() map[string]*pluginsdk.Schema {
 			},
 		},
 
+		"baidu_credential": {
+			Type:     pluginsdk.TypeList,
+			Optional: true,
+			MaxItems: 1,
+			Elem: &pluginsdk.Resource{
+				Schema: map[string]*pluginsdk.Schema{
+					"api_key": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+					"secret_key": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						Sensitive:    true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+				},
+			},
+		},
+
 		"browser_credential": {
 			Type:     pluginsdk.TypeList,
 			Optional: true,
@@ -169,9 +221,78 @@ func (r NotificationHubResource) Arguments() map[string]*pluginsdk.Schema {
 			Elem: &pluginsdk.Resource{
 				Schema: map[string]*pluginsdk.Schema{
 					"api_key": {
-						Type:      pluginsdk.TypeString,
-						Required:  true,
-						Sensitive: true,
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						Sensitive:    true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+				},
+			},
+		},
+
+		"mpns_credential": {
+			Type:     pluginsdk.TypeList,
+			Optional: true,
+			MaxItems: 1,
+			Elem: &pluginsdk.Resource{
+				Schema: map[string]*pluginsdk.Schema{
+					"certificate_key": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						Sensitive:    true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+					"mpns_certificate": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+					"thumbprint": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+				},
+			},
+		},
+
+		"wns_credential": {
+			Type:     pluginsdk.TypeList,
+			Optional: true,
+			MaxItems: 1,
+			Elem: &pluginsdk.Resource{
+				Schema: map[string]*pluginsdk.Schema{
+					"package_sid": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+					"secret_key": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						Sensitive:    true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+				},
+			},
+		},
+
+		"xiaomi_credential": {
+			Type:     pluginsdk.TypeList,
+			Optional: true,
+			MaxItems: 1,
+			Elem: &pluginsdk.Resource{
+				Schema: map[string]*pluginsdk.Schema{
+					"app_secret": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						Sensitive:    true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+					"endpoint": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						ValidateFunc: validation.StringIsNotEmpty,
 					},
 				},
 			},
